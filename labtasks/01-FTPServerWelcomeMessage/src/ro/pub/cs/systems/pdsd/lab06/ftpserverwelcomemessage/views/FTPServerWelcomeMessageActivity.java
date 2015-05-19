@@ -1,7 +1,12 @@
 package ro.pub.cs.systems.pdsd.lab06.ftpserverwelcomemessage.views;
 
+import java.io.BufferedReader;
+import java.net.ServerSocket;
+import java.net.Socket;
+
 import ro.pub.cs.systems.pdsd.lab06.ftpserverwelcomemessage.R;
 import ro.pub.cs.systems.pdsd.lab06.ftpserverwelcomemessage.general.Constants;
+import ro.pub.cs.systems.pdsd.lab06.ftpserverwelcomemessage.general.Utilities;
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
@@ -16,6 +21,7 @@ public class FTPServerWelcomeMessageActivity extends Activity {
 	
 	private EditText FTPServerAddressEditText;
 	private TextView welcomeMessageTextView;
+	public String line;
 	
 	protected class FTPServerCommunicationThread extends Thread {
 		
@@ -32,7 +38,40 @@ public class FTPServerWelcomeMessageActivity extends Activity {
 				// - the value does not start with Constants.FTP_MULTILINE_START_CODE2
 				// append the line to the welcomeMessageTextView text view content (on the UI thread!!!)
 				// close the socket
-
+				
+				welcomeMessageTextView.post(new Runnable() {
+					
+					@Override
+					public void run() {
+						// TODO Auto-generated method stub
+						welcomeMessageTextView.setText("");
+					}
+				});
+				
+				String FTPServerAddress = FTPServerAddressEditText.getText().toString();
+				int ftp_port = Constants.FTP_PORT;
+				
+				Socket FTPSocket = new Socket(FTPServerAddress, ftp_port);
+				BufferedReader bufferedReader = Utilities.getReader(FTPSocket);
+				line = bufferedReader.readLine();
+				if (line.startsWith(Constants.FTP_MULTILINE_START_CODE)) {
+					while ((line = bufferedReader.readLine()) != null) {
+						if (!line.equals(Constants.FTP_MULTILINE_END_CODE1) && !line.equals(Constants.FTP_MULTILINE_END_CODE2)) {
+							welcomeMessageTextView.post(new Runnable() {
+								final String final_line = line;
+								@Override
+								public void run() {
+									// TODO Auto-generated method stub
+									welcomeMessageTextView.append(final_line + "\n");
+								}
+							});
+						} else {
+								break;
+						}
+					}
+				}
+				FTPSocket.close();
+				
 			} catch (Exception exception) {
 				Log.e(Constants.TAG, "An exception has occurred: "+exception.getMessage());
 				if (Constants.DEBUG) {

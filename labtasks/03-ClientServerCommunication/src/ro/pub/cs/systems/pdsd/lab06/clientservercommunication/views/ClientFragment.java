@@ -1,9 +1,11 @@
 package ro.pub.cs.systems.pdsd.lab06.clientservercommunication.views;
 
+import java.io.BufferedReader;
 import java.net.Socket;
 
 import ro.pub.cs.systems.pdsd.lab06.clientservercommunication.R;
 import ro.pub.cs.systems.pdsd.lab06.clientservercommunication.general.Constants;
+import ro.pub.cs.systems.pdsd.lab06.clientservercommunication.general.Utilities;
 import android.app.Fragment;
 import android.os.Bundle;
 import android.util.Log;
@@ -22,6 +24,7 @@ public class ClientFragment extends Fragment {
 	private class ClientThread implements Runnable {
 		
 		private Socket socket = null;
+		public String line;
 		
 		@Override
 		public void run() {
@@ -35,6 +38,34 @@ public class ClientFragment extends Fragment {
 				// - while the line that was read is not null (EOF was not sent), append the content to serverMessageTextView (on UI thread !!!)
 				// - close the socket to the server	
 
+				serverMessageTextView.post(new Runnable() {
+					
+					@Override
+					public void run() {
+						// TODO Auto-generated method stub
+						serverMessageTextView.setText("");
+					}
+				});
+				
+				String serverAddress = serverAddressEditText.getText().toString();
+				int serverPort = Integer.parseInt(serverPortEditText.getText().toString());
+				
+				socket = new Socket(serverAddress, serverPort);
+				BufferedReader bufferedReader = Utilities.getReader(socket);
+				
+				while ((line = bufferedReader.readLine()) != null) {
+					serverMessageTextView.post(new Runnable() {
+						
+						final String final_line = line;
+						@Override
+						public void run() {
+							// TODO Auto-generated method stub
+							serverMessageTextView.append(final_line + "\n");
+						}
+					});
+				}
+				socket.close();
+				
 			} catch (Exception exception) {
 				Log.e(Constants.TAG, "An exception has occurred: "+exception.getMessage());
 				if (Constants.DEBUG) {
